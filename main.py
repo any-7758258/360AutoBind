@@ -1,6 +1,7 @@
-"""360自动绑定网站，自动提交sitemap"""
+"""360自动绑定网站 自动提交sitemap"""
 import configparser
 import linecache
+import random
 import re
 import httpx
 import tldextract
@@ -13,7 +14,6 @@ class Bind():
     """
     360自动绑定网站，自动提交sitemap
     """
-
     def __init__(self):
         with open('user/cookie.txt', 'r', encoding='utf-8')as txt_f:
             self.cookie = txt_f.read().strip()
@@ -34,10 +34,40 @@ class Bind():
                         'sec-fetch-dest': 'empty',
                         'sec-fetch-mode': 'cors',
                         'sec-fetch-site': 'same-origin',
-                        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
-                        '(KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36'}
+                        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                        ' (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36'}
 
         self.sitemap_urls = linecache.getlines('user/sitemap.txt')
+        self.init_urls()
+        print(f'本次需要绑定的域名：{len(self.urls)}个')
+        print(self.urls)
+
+    def init_urls(self):
+        """初始化self.urls"""
+        if int(self.conf["user"]["domain_count"]) > 0:
+            self.urls = self.auto_create_son_url(self.urls)
+
+    def random_str(self, min_count, max_count):
+        """随机字符"""
+        abc = "abcdefghijklmnopqrstuvwxyz0123456789"
+        count = random.randint(min_count, max_count)
+        return "".join(random.choices(abc, k=count))
+
+    def auto_create_son_url(self, urls):
+        """自动生成二级域名"""
+        root_domains = []
+        for url in urls:
+            root_domain = self.get_domain_info(url)[-1]
+            root_domains.append(root_domain)
+        son_domains = []
+        for rdomain in root_domains:
+            for i in range(int(self.conf["user"]["domain_count"])):
+                son_domain = f"{self.random_str(5,8)}.{rdomain}"
+                son_domains.append(son_domain)
+        print(f'自动生成二级域名：{len(son_domains)}个')
+        print(son_domains)
+        urls.extend(son_domains)
+        return list(set(urls))
 
     def get_domain_info(self, domain):
         """获取域名前后缀"""
@@ -127,7 +157,8 @@ class Bind():
             if int(self.conf["user"]['imgvcode']):
                 # 图鉴打码
                 result = dama.base64_api(
-                    img_path, uname=self.conf['www.ttshitu.com']["uname"], pwd=self.conf['www.ttshitu.com']["pwd"])
+                    img_path, uname=self.conf['www.ttshitu.com']["uname"],
+                    pwd=self.conf['www.ttshitu.com']["pwd"])
             else:
                 # orc识别
                 result = orc.ocr(img_path)
