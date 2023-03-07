@@ -3,6 +3,7 @@
 import base64
 import json
 import requests
+from retrying import retry
 # 一、图片文字类型(默认 3 数英混合)：
 # 1 : 纯数字
 # 1001：纯数字2
@@ -35,7 +36,7 @@ import requests
 # 五、拼图识别
 # 53：拼图识别
 
-
+@retry(stop_max_attempt_number=3)
 def base64_api(img_path, uname='账号', pwd='密码', typeid=2):
     """图鉴打码平台api"""
     with open(img_path, 'rb') as img_f:

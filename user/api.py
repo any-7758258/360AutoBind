@@ -4,25 +4,30 @@
 """
 
 import httpx
+from retrying import retry
 
 
+@retry(stop_max_attempt_number=3)
 def create_web_page(domain, name, code):
     """
     调用web程序api 首页meta标签验证
     使程序首页生成对应<meta 标签
     """
     url = f"http://{domain}/verification?name={name}&content={code}"
-    resp = httpx.get(url)
-    print(resp)
-    print(f"{domain} 调用API 生成验证代码 {name} {code}")
+    headers = {'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+               ' (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36'}
+    resp = httpx.get(url, headers=headers, timeout=30)
+    print(f"{domain} 调用API[{resp.status_code}] 生成验证代码 {name} {code}")
 
 
+@retry(stop_max_attempt_number=3)
 def create_web_file(domain, content):
     """
     调用web程序api txt文件验证
     使程序首页生成对应页面内容
     """
     url = f"http://{domain}/22.php?type=add&bd={content}"
-    resp = httpx.get(url)
-    print(resp)
-    print(f"{domain} 调用API 生成验证文件 {content}.txt")
+    headers = {'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+               ' (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36'}
+    resp = httpx.get(url, headers=headers, timeout=30)
+    print(f"{domain} 调用API[{resp.status_code}] 生成验证文件 {content}.txt")

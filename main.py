@@ -89,7 +89,7 @@ class Bind():
         data = {"site": domain}
         resp = httpx.post(url, data=data, headers=headers, timeout=30)
         if resp.json()['status'] == 0:
-            print(f"添加网站：{domain} 成功")
+            print(f"添加网站：{domain} 成功 {resp.json()['info']}")
 
     @retry(stop_max_attempt_number=3)
     def add_son_site(self, www_domain, son_domains):
