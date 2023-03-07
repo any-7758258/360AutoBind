@@ -36,7 +36,7 @@ import requests
 # 53：拼图识别
 
 
-def base64_api(img_path, uname='aidan520', pwd='jiushiwo0', typeid=2):
+def base64_api(img_path, uname='账号', pwd='密码', typeid=2):
     """图鉴打码平台api"""
     with open(img_path, 'rb') as img_f:
         base64_data = base64.b64encode(img_f.read())
@@ -49,8 +49,3 @@ def base64_api(img_path, uname='aidan520', pwd='jiushiwo0', typeid=2):
     # ！！！！！！！注意：返回 人工不足等 错误情况 请加逻辑处理防止脚本卡死 继续重新 识别
     return r_data["message"]
 
-
-if __name__ == "__main__":
-    IMG_PATH = "D:\\CODE\\360_auto_bind\\v.jpg"
-    result = base64_api(IMG_PATH, uname='aidan520', pwd='jiushiwo0',  typeid=2)
-    print(result)

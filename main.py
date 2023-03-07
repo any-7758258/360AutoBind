@@ -20,10 +20,21 @@ class Bind():
             self.urls = list(set(txt_f.read().strip().split('\n')))
         self.conf = configparser.ConfigParser()
         self.conf.read('user/user.ini')
-        self.headers = {
-            "cookie": self.cookie,
-            'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
-            '(KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36'}
+        self.headers = {'accept': 'application/json, text/plain, */*',
+                        'accept-encoding': 'gzip, deflate, br',
+                        'accept-language': 'zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7',
+                        'content-type': 'application/x-www-form-urlencoded',
+                        'cookie': self.cookie,
+                        'origin': 'https://zhanzhang.so.com',
+                        'sec-ch-ua': '"Chromium";v="110", "Not A(Brand";v="24", "Google '
+                        'Chrome";v="110"',
+                        'sec-ch-ua-mobile': '?0',
+                        'sec-ch-ua-platform': '"Windows"',
+                        'sec-fetch-dest': 'empty',
+                        'sec-fetch-mode': 'cors',
+                        'sec-fetch-site': 'same-origin',
+                        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
+                        '(KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36'}
 
         self.sitemap_urls = linecache.getlines('user/sitemap.txt')
 
@@ -33,29 +44,16 @@ class Bind():
         subdomain = tld.subdomain
         full_domain = ".".join([tld.subdomain, tld.domain, tld.suffix])
         root_domain = ".".join([tld.domain, tld.suffix])
-        return subdomain, full_domain,root_domain
+        return subdomain, full_domain, root_domain
 
     def add_site(self, domain):
         """
         360站长 添加网站
         """
         url = "https://zhanzhang.so.com/?m=Site&a=add"
-        headers = {'accept': 'application/json, text/plain, */*',
-                   'accept-encoding': 'gzip, deflate, br',
-                   'accept-language': 'zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7',
-                   'content-type': 'application/x-www-form-urlencoded',
-                   'cookie': self.cookie,
-                   'origin': 'https://zhanzhang.so.com',
-                   'referer': 'https://zhanzhang.so.com/sitetool/site_manage',
-                   'sec-ch-ua': '"Chromium";v="110", "Not A(Brand";v="24", "Google '
-                                'Chrome";v="110"',
-                   'sec-ch-ua-mobile': '?0',
-                   'sec-ch-ua-platform': '"Windows"',
-                   'sec-fetch-dest': 'empty',
-                   'sec-fetch-mode': 'cors',
-                   'sec-fetch-site': 'same-origin',
-                   'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
-                                 '(KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36'}
+        headers = self.headers.copy()
+        headers.update(
+            {'referer': 'https://zhanzhang.so.com/sitetool/site_manage'})
         data = {"site": domain}
         resp = httpx.post(url, data=data, headers=headers)
         if resp.json()['status'] == 0:
@@ -66,22 +64,9 @@ class Bind():
         360站长 添加二级网站
         """
         url = "https://zhanzhang.so.com/?m=Sitemanager&a=psite"
-        headers = {'accept': 'application/json, text/plain, */*',
-                   'accept-encoding': 'gzip, deflate, br',
-                   'accept-language': 'zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7',
-                   'content-type': 'application/x-www-form-urlencoded',
-                   'cookie': self.cookie,
-                   'origin': 'https://zhanzhang.so.com',
-                   'referer': 'https://zhanzhang.so.com/sitetool/site_manage',
-                   'sec-ch-ua': '"Chromium";v="110", "Not A(Brand";v="24", "Google '
-                                'Chrome";v="110"',
-                   'sec-ch-ua-mobile': '?0',
-                   'sec-ch-ua-platform': '"Windows"',
-                   'sec-fetch-dest': 'empty',
-                   'sec-fetch-mode': 'cors',
-                   'sec-fetch-site': 'same-origin',
-                   'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
-                                 '(KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36'}
+        headers = self.headers.copy()
+        headers.update(
+            {'referer': 'https://zhanzhang.so.com/sitetool/site_manage'})
         data = {"action": "add",
                 "psite": www_domain,
                 "site": son_domains}
@@ -134,7 +119,8 @@ class Bind():
 
             if int(self.conf["user"]['imgvcode']):
                 # 图鉴打码
-                result = dama.base64_api(img_path)
+                result = dama.base64_api(
+                    img_path, uname=self.conf['www.ttshitu.com']["uname"], pwd=self.conf['www.ttshitu.com']["pwd"])
             else:
                 # orc识别
                 result = orc.ocr(img_path)
@@ -146,22 +132,9 @@ class Bind():
         360站长 推送URL
         """
         url = 'https://zhanzhang.so.com/?m=PageInclude&a=upload'
-        headers = {'accept': 'application/json, text/plain, */*',
-                   'accept-encoding': 'gzip, deflate, br',
-                   'accept-language': 'zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7',
-                   'content-type': 'application/x-www-form-urlencoded',
-                   'cookie': self.cookie,
-                   'origin': 'https://zhanzhang.so.com',
-                   'referer': 'https://zhanzhang.so.com/sitetool/page_include',
-                   'sec-ch-ua': '"Chromium";v="110", "Not A(Brand";v="24", "Google '
-                                'Chrome";v="110"',
-                   'sec-ch-ua-mobile': '?0',
-                   'sec-ch-ua-platform': '"Windows"',
-                   'sec-fetch-dest': 'empty',
-                   'sec-fetch-mode': 'cors',
-                   'sec-fetch-site': 'same-origin',
-                   'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
-                                 '(KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36'}
+        headers = self.headers.copy()
+        headers.update(
+            {'referer': 'https://zhanzhang.so.com/sitetool/page_include'})
         data = {'url': urls,
                 'checkcode': checkcode, }
         resp = httpx.post(url, headers=headers, data=data)
@@ -172,22 +145,9 @@ class Bind():
         360站长 添加sitemap链接
         """
         url = f'https://zhanzhang.so.com/?m=Sitemap&a=add&host={domain}'
-        headers = {'accept': 'application/json, text/plain, */*',
-                   'accept-encoding': 'gzip, deflate, br',
-                   'accept-language': 'zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7',
-                   'content-type': 'application/x-www-form-urlencoded',
-                   'cookie': self.cookie,
-                   'origin': 'https://zhanzhang.so.com',
-                   'referer': 'https://zhanzhang.so.com/sitetool/page_include',
-                   'sec-ch-ua': '"Chromium";v="110", "Not A(Brand";v="24", "Google '
-                                'Chrome";v="110"',
-                   'sec-ch-ua-mobile': '?0',
-                   'sec-ch-ua-platform': '"Windows"',
-                   'sec-fetch-dest': 'empty',
-                   'sec-fetch-mode': 'cors',
-                   'sec-fetch-site': 'same-origin',
-                   'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
-                                 '(KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36'}
+        headers = self.headers.copy()
+        headers.update(
+            {'referer': 'https://zhanzhang.so.com/sitetool/page_include'})
         data = {"seed": "\n".join(sitemap_url),
                 "code": checkcode}
         resp = httpx.post(url, headers=headers, data=data)
@@ -198,22 +158,9 @@ class Bind():
         360站长 点击更新sitemap
         """
         url = f'https://zhanzhang.so.com/?m=Sitemap&a=ping&host={domain}'
-        headers = {'accept': 'application/json, text/plain, */*',
-                   'accept-encoding': 'gzip, deflate, br',
-                   'accept-language': 'zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7',
-                   'content-type': 'application/x-www-form-urlencoded',
-                   'cookie': self.cookie,
-                   'origin': 'https://zhanzhang.so.com',
-                   'referer': 'https://zhanzhang.so.com/sitetool/page_include',
-                   'sec-ch-ua': '"Chromium";v="110", "Not A(Brand";v="24", "Google '
-                                'Chrome";v="110"',
-                   'sec-ch-ua-mobile': '?0',
-                   'sec-ch-ua-platform': '"Windows"',
-                   'sec-fetch-dest': 'empty',
-                   'sec-fetch-mode': 'cors',
-                   'sec-fetch-site': 'same-origin',
-                   'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
-                                 '(KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36'}
+        headers = self.headers.copy()
+        headers.update(
+            {'referer': 'https://zhanzhang.so.com/sitetool/page_include'})
         data = {"seed": "\n".join(sitemap_url)}
         resp = httpx.post(url, headers=headers, data=data)
         result = resp.json()
@@ -277,7 +224,7 @@ class Bind():
             # 最后统一提交蜘蛛sitemap
             for sitemap_url in online_sitemap_urls:
                 result = self.ping_sitemap(domain, sitemap_url)
-                success_count+=1
+                success_count += 1
         print(f'\n本次成功更新sitemap {success_count}条')
 
     def bind_site(self):
@@ -292,7 +239,8 @@ class Bind():
             if domain in webs:
                 print(f'{domain} 已绑定')
             else:
-                domain_sub, full_domain, root_domain = self.get_domain_info(domain)
+                domain_sub, full_domain, root_domain = self.get_domain_info(
+                    domain)
                 if domain_sub == 'www':
                     www_webs.append(full_domain)
                 elif domain_sub != '':
@@ -316,21 +264,19 @@ class Bind():
                 self.verify(domain, 'file')
 
         webs = self.web_list()
+        print(webs)
         for domain in list(son_webs.keys()):
             if "www."+domain in webs:
                 print(f'www.{domain} 已绑定 开始批量绑定{domain}的二级域名')
                 son_domains = ",".join(son_webs[domain])
-                self.add_son_site("www."+domain,son_domains)
+                self.add_son_site("www."+domain, son_domains)
             else:
                 print(f'www.{domain} 未绑定 跳过绑定{domain}的二级域名，请绑定www主域名')
 
+
 if __name__ == '__main__':
-    try:
-        B = Bind()
-        print('##开始绑定网站')
-        B.bind_site()
-        print('\n##开始推送sitemap')
-        B.update_sitemap()
-    except Exception as e:
-        print(e)
-        print('cookie已过期 请在./user/cookie.txt中填写新的cookie')
+    B = Bind()
+    print('##开始绑定网站')
+    B.bind_site()
+    print('\n##开始推送sitemap')
+    B.update_sitemap()
