@@ -7,13 +7,13 @@ import easyocr
 def ocr(img_path):
     """fuck easyOCR"""
     # 创建reader对象
-    reader = easyocr.Reader(['en'])
+    reader = easyocr.Reader(['en'], gpu=False)
     # 读取图像
     result = reader.readtext(img_path)
     # 结果
     if len(result) > 0 and len(result[0]) > 1:
         code = "".join([i for i in result[0][1] if i.isalpha()])
-        print('img_path识别结果：', result)
+        print('验证码图片AI识别结果：', result)
         return code
-    print('img_path识别结果：err', result)
+    print('验证码图片识别失败 正在重试')
     return 'err'

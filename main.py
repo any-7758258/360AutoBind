@@ -4,6 +4,7 @@ import linecache
 import re
 import httpx
 import tldextract
+from retrying import retry
 from orc import dama, orc
 from user import api
 
@@ -46,6 +47,7 @@ class Bind():
         root_domain = ".".join([tld.domain, tld.suffix])
         return subdomain, full_domain, root_domain
 
+    @retry(stop_max_attempt_number=3)
     def add_site(self, domain):
         """
         360站长 添加网站
@@ -55,10 +57,11 @@ class Bind():
         headers.update(
             {'referer': 'https://zhanzhang.so.com/sitetool/site_manage'})
         data = {"site": domain}
-        resp = httpx.post(url, data=data, headers=headers)
+        resp = httpx.post(url, data=data, headers=headers, timeout=30)
         if resp.json()['status'] == 0:
             print(f"添加网站：{domain} 成功")
 
+    @retry(stop_max_attempt_number=3)
     def add_son_site(self, www_domain, son_domains):
         """
         360站长 添加二级网站
@@ -70,30 +73,33 @@ class Bind():
         data = {"action": "add",
                 "psite": www_domain,
                 "site": son_domains}
-        resp = httpx.post(url, data=data, headers=headers)
+        resp = httpx.post(url, data=data, headers=headers, timeout=30)
         if resp.json()['status'] == 0:
             print(f"添加二级网站：{son_domains} 成功")
 
+    @retry(stop_max_attempt_number=3)
     def get_file_code(self, domain):
         """
         360站长 获取验证文件内容
         """
         url = f"https://zhanzhang.so.com/?m=Site&a=get_auth_file&file={domain}"
-        resp = httpx.get(url, headers=self.headers)
+        resp = httpx.get(url, headers=self.headers, timeout=30)
         print(f"[{domain}]获取验证文件内容：", resp.text)
         return resp.text
 
+    @retry(stop_max_attempt_number=3)
     def get_code(self, domain):
         """
         360站长 获取meta验证代码内容
         """
         url = f"https://zhanzhang.so.com/?m=Site&a=get_auth_html&html={domain}"
-        resp = httpx.get(url, headers=self.headers)
+        resp = httpx.get(url, headers=self.headers, timeout=30)
         print(f"[{domain}]获取验证代码内容：", resp.json())
         name = re.findall('name=\"(.*?)\"', resp.json()['data'])[0]
         code = re.findall('content=\"(.*?)\"', resp.json()['data'])[0]
         return name, code
 
+    @retry(stop_max_attempt_number=3)
     def verify(self, domain, v_type):
         """
         360站长 验证站点
@@ -105,6 +111,7 @@ class Bind():
         resp = httpx.post(url, data=data, headers=self.headers, timeout=30)
         print(f"{domain} 绑定结果：", resp.json(), '\n')
 
+    @retry(stop_max_attempt_number=3)
     def get_vimg_code(self):
         """
         360站长 获取验证码
@@ -113,7 +120,7 @@ class Bind():
         while len(result) != 4:
             img_path = "orc/v.jpg"
             url = 'https://zhanzhang.so.com/index.php?a=checkcode&m=Utils'
-            resp = httpx.get(url, headers=self.headers)
+            resp = httpx.get(url, headers=self.headers, timeout=30)
             with open(img_path, 'wb') as img_f:
                 img_f.write(resp.content)
 
@@ -127,6 +134,7 @@ class Bind():
                 # print(result)
         return result
 
+    @retry(stop_max_attempt_number=3)
     def push_url(self, urls, checkcode):
         """
         360站长 推送URL
@@ -137,9 +145,10 @@ class Bind():
             {'referer': 'https://zhanzhang.so.com/sitetool/page_include'})
         data = {'url': urls,
                 'checkcode': checkcode, }
-        resp = httpx.post(url, headers=headers, data=data)
+        resp = httpx.post(url, headers=headers, data=data, timeout=30)
         return resp.json()
 
+    @retry(stop_max_attempt_number=3)
     def add_sitemap(self, domain, sitemap_url, checkcode):
         """
         360站长 添加sitemap链接
@@ -150,9 +159,10 @@ class Bind():
             {'referer': 'https://zhanzhang.so.com/sitetool/page_include'})
         data = {"seed": "\n".join(sitemap_url),
                 "code": checkcode}
-        resp = httpx.post(url, headers=headers, data=data)
+        resp = httpx.post(url, headers=headers, data=data, timeout=30)
         return resp.json()
 
+    @retry(stop_max_attempt_number=3)
     def ping_sitemap(self, domain, sitemap_url):
         """
         360站长 点击更新sitemap
@@ -162,24 +172,26 @@ class Bind():
         headers.update(
             {'referer': 'https://zhanzhang.so.com/sitetool/page_include'})
         data = {"seed": "\n".join(sitemap_url)}
-        resp = httpx.post(url, headers=headers, data=data)
+        resp = httpx.post(url, headers=headers, data=data, timeout=30)
         result = resp.json()
         print(domain, result["info"], sitemap_url)
         return result
 
+    @retry(stop_max_attempt_number=3)
     def web_list(self):
         """
         360站长 获取当前账号绑定的网站
         """
         url = 'https://zhanzhang.so.com/?m=Userinfo&a=sites'
-        resp = httpx.get(url, headers=self.headers)
+        resp = httpx.get(url, headers=self.headers, timeout=30)
         result = [i['site'] for i in resp.json()['data']]
         return result
 
+    @retry(stop_max_attempt_number=3)
     def sitemap_list(self, domain):
         """360站长 获取当前域名绑定的sitemap链接"""
         url = f'https://zhanzhang.so.com/?m=Sitemap&a=get_list&host={domain}&p=1'
-        resp = httpx.get(url, headers=self.headers)
+        resp = httpx.get(url, headers=self.headers, timeout=30)
         result = resp.json()['data']['list']
         return result
 
@@ -230,7 +242,6 @@ class Bind():
     def bind_site(self):
         """360站长 绑定网站"""
         webs = self.web_list()
-
         # 先绑定www主站
         www_webs = []
         son_webs = {}
@@ -262,9 +273,7 @@ class Bind():
                 file_content = self.get_file_code(domain)
                 api.create_web_file(domain, file_content)
                 self.verify(domain, 'file')
-
         webs = self.web_list()
-        print(webs)
         for domain in list(son_webs.keys()):
             if "www."+domain in webs:
                 print(f'www.{domain} 已绑定 开始批量绑定{domain}的二级域名')
