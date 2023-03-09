@@ -176,14 +176,14 @@ class Bind():
                     pwd=self.conf['www.ttshitu.com']["pwd"])
             else:
                 # orc识别
-                result = orc.ocr(img_path)
-            if len(result) == 4:
-                print(f'验证码code：{result}')
+                result = orc.docr(img_path)
+            if len(result) == 4 and result.encode().isalpha():
+                # print(f'验证码code：{result}')
                 break
             if result == "err":
                 print('验证码code: 识别失败 重试')
             else:
-                print(f'验证码code：{result} {len(result)} 不符合格式要求 重试')
+                print(f'验证码code：{result} 不符合格式要求 重试')
         return result
 
     @retry(stop_max_attempt_number=3)
@@ -226,7 +226,8 @@ class Bind():
         data = {"seed": "\n".join(sitemap_url)}
         resp = httpx.post(url, headers=headers, data=data, timeout=30)
         result = resp.json()
-        print(domain, result["info"], sitemap_url)
+        info = result["info"]
+        print(f"【{domain}】 {info} {sitemap_url}")
         return result
 
     @retry(stop_max_attempt_number=3)
@@ -247,28 +248,36 @@ class Bind():
         result = resp.json()['data']['list']
         return result
 
-    def del_site(self,domains): 
+    def del_site(self, domains):
         """360站长 删除报风险sitemap的网站"""
         url = 'https://zhanzhang.so.com/?m=Site&a=delete'
         headers = self.headers.copy()
-        headers.update({'referer': 'https://zhanzhang.so.com/sitetool/site_manage'})
-        lines = ['{"roleId":7,"siteName":"域名"}'.replace('域名',i) for i in domains]
+        headers.update(
+            {'referer': 'https://zhanzhang.so.com/sitetool/site_manage'})
+        lines = ['{"roleId":7,"siteName":"域名"}'.replace(
+            '域名', i) for i in domains]
         data = f'sites_delete=[{",".join(lines)}]'
         resp = httpx.post(url, headers=headers, data=data, timeout=30)
         result = resp.json()
-        print(f'删除网站{len(domains)}个',result)
+        print(f'\n本次删除网站{len(domains)}个', result)
 
     def del_fuck_webs(self):
         """360站长 删除风险sitemap"""
         if len(self.fuck_webs) > 0:
             print('\n## 开始删除报风险sitemap的网站')
             webs = self.web_list()
-            del_webs = []
+            del_www_webs = []
+            del_fan_webs = []
             for web in webs:
                 root_domain = self.get_domain_info(web)[-1]
                 if root_domain in self.fuck_webs:
-                    del_webs.append(web)
-            print(del_webs)
+                    if self.get_domain_info(web)[0]=="www":
+                        del_www_webs.append(web)
+                    else:
+                        del_fan_webs.append(web)
+            del_webs = del_fan_webs+del_www_webs
+            for i in del_webs:
+                print(i)
             self.del_site(del_webs)
 
     def update_sitemap_func(self):
@@ -278,7 +287,7 @@ class Bind():
         webs = self.web_list()
         count = len(webs)
         success_count = 0
-        for index,domain in enumerate(webs):
+        for index, domain in enumerate(webs):
             full_domain, root_domain = self.get_domain_info(domain)[1:]
             if root_domain in self.fuck_webs:
                 print(f'{full_domain} 风险sitemap url请删除')
@@ -298,20 +307,21 @@ class Bind():
                 info = '验证码有误~'
                 while status == -1 and info == '验证码有误~':
                     verify_code = self.get_vimg_code()
-                    result = self.add_sitemap(domain, need_add_sitemap_urls, verify_code)
+                    result = self.add_sitemap(
+                        domain, need_add_sitemap_urls, verify_code)
                     status = result['status']
                     info = result['info']
                 if info != '验证码有误~' and status != 0:
-                    print(f"[{index+1}/{count}]",domain, info)
+                    print(f"[{index+1}/{count}]", domain, info)
                     if "风险sitemap" in info:
                         self.fuck_webs.append(root_domain)
                     continue
-                online_sitemap_urls = [i['url'] for i in self.sitemap_list(domain)]
+                online_sitemap_urls = [i['url']
+                                       for i in self.sitemap_list(domain)]
             if len(online_sitemap_urls) > 0:
                 # 最后统一提交蜘蛛sitemap
-                for sitemap_url in online_sitemap_urls:
-                    result = self.ping_sitemap(domain, sitemap_url)
-                    success_count += 1
+                self.ping_sitemap(domain, online_sitemap_urls)
+                success_count += len(online_sitemap_urls)
                 # 写入推送日志
                 with open(f'log/{datetime.date.today()}.txt', 'a', encoding='utf-8')as txt_f:
                     txt_f.write("\n".join(online_sitemap_urls)+"\n")
@@ -371,6 +381,7 @@ def main():
     b360.bind_site_func()
     print('\n## 开始推送sitemap')
     b360.update_sitemap_func()
+
 
 if __name__ == '__main__':
     main()

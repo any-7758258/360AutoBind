@@ -1,19 +1,12 @@
-"""导入easyocr"""
+"""导入ddddocr"""
 
-# 导入easyocr
-import easyocr
+import ddddocr
 
-
-def ocr(img_path):
-    """fuck easyOCR"""
-    # 创建reader对象
-    reader = easyocr.Reader(['en'], gpu=False)
-    # 读取图像
-    result = reader.readtext(img_path)
-    # 结果
-    if len(result) > 0 and len(result[0]) > 1:
-        code = "".join([i for i in result[0][1] if i.isalpha()])
-        print(f'验证码图片AI识别结果：{code}', result)
-        return code
-    # print('验证码图片识别失败 正在重试...')
-    return 'err'
+def docr(img_path):
+    """fuck ddddocr"""
+    myocr = ddddocr.DdddOcr(show_ad=False)
+    with open(img_path, 'rb') as img_f:
+        image = img_f.read()
+    res = myocr.classification(image)
+    # print(f'验证码图片AI识别结果：{res}')
+    return res
