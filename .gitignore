@@ -2,3 +2,4 @@ log/
 orc/__pycache__/
 user/__pycache__/
 orc/v.jpg
+/venv
