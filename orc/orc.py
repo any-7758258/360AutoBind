@@ -13,7 +13,7 @@ def ocr(img_path):
     # 结果
     if len(result) > 0 and len(result[0]) > 1:
         code = "".join([i for i in result[0][1] if i.isalpha()])
-        print('验证码图片AI识别结果：', result)
+        print(f'验证码图片AI识别结果：{code}', result)
         return code
-    print('验证码图片识别失败 正在重试')
+    # print('验证码图片识别失败 正在重试...')
     return 'err'

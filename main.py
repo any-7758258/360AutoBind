@@ -1,12 +1,17 @@
 """360自动绑定网站 自动提交sitemap"""
 
+import time
+from urllib import parse
+from pprint import pprint
 import configparser
+import datetime
 import linecache
 import random
 import re
 import httpx
 import tldextract
 from retrying import retry
+import test
 from orc import dama, orc
 from user import api
 
@@ -15,6 +20,7 @@ class Bind():
     """
     360自动绑定网站，自动提交sitemap
     """
+
     def __init__(self):
         self.conf = configparser.ConfigParser()
         self.conf.read('user/config.ini')
@@ -37,8 +43,9 @@ class Bind():
                         'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
                         ' (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36'}
         self.sitemap_urls = self.getlines(self.conf['filePath']['sitemap'])
+        self.fuck_webs = []
         self.init_urls()
-        print(f'本次需要绑定的域名：{len(self.urls)}个')
+        print(f'本次需要更新的域名：{len(self.urls)}个')
         print(self.urls)
 
     def init_urls(self):
@@ -46,9 +53,10 @@ class Bind():
         if int(self.conf["user"]["domain_count"]) > 0:
             self.urls = self.auto_create_son_url(self.urls)
 
-    def getlines(self,file_path):
+    def getlines(self, file_path):
         """获取文件内数据 去重返回列表"""
-        new_list = [i.strip() for i in linecache.getlines(file_path) if i.strip() != ""]
+        new_list = [i.strip()
+                    for i in linecache.getlines(file_path) if i.strip() != ""]
         new_list = list(set(new_list))
         return new_list
 
@@ -152,7 +160,7 @@ class Bind():
         360站长 获取验证码
         """
         result = ''
-        while len(result) != 4:
+        while True:
             img_path = "orc/v.jpg"
             url = 'https://zhanzhang.so.com/index.php?a=checkcode&m=Utils'
             resp = httpx.get(url, headers=self.headers, timeout=30)
@@ -167,7 +175,13 @@ class Bind():
             else:
                 # orc识别
                 result = orc.ocr(img_path)
-                # print(result)
+            if len(result) == 4:
+                print(f'验证码code：{result}')
+                break
+            if result == "err":
+                print('验证码code: 识别失败 重试')
+            else:
+                print(f'验证码code：{result} {len(result)} 不符合格式要求 重试')
         return result
 
     @retry(stop_max_attempt_number=3)
@@ -231,16 +245,40 @@ class Bind():
         result = resp.json()['data']['list']
         return result
 
-    def update_sitemap(self):
+    def del_site(self,domains): 
+        """删除报风险sitemap的网站"""
+        url = 'https://zhanzhang.so.com/?m=Site&a=delete'
+        headers = self.headers.copy()
+        headers.update({'referer': 'https://zhanzhang.so.com/sitetool/site_manage'})
+        lines = ['{"roleId":7,"siteName":"域名"}'.replace('域名',i) for i in domains]
+        data = f'sites_delete=[{",".join(lines)}]'
+        resp = httpx.post(url, headers=headers, data=data, timeout=30)
+        result = resp.json()
+        print(f'删除网站{len(domains)}个',result)
+
+    def del_fuck_webs(self):
+        """删除风险sitemap"""
+        if len(self.fuck_webs) > 0:
+            print('\n## 开始删除报风险sitemap的网站')
+            webs = self.web_list()
+            del_webs = []
+            for web in webs:
+                root_domain = self.get_domain_info(web)[-1]
+                if root_domain in self.fuck_webs:
+                    del_webs.append(web)
+            print(del_webs)
+            self.del_site(del_webs)
+
+    def update_sitemap_func(self):
         """
         360站长 点击更新sitemap
         """
         webs = self.web_list()
-        fuck_webs = []
+        count = len(webs)
         success_count = 0
-        for domain in webs:
+        for index,domain in enumerate(webs):
             full_domain, root_domain = self.get_domain_info(domain)[1:]
-            if root_domain in fuck_webs:
+            if root_domain in self.fuck_webs:
                 print(f'{full_domain} 风险sitemap url请删除')
                 continue
             if not int(self.conf['user']['ping_all']) and domain not in self.urls:
@@ -258,24 +296,29 @@ class Bind():
                 info = '验证码有误~'
                 while status == -1 and info == '验证码有误~':
                     verify_code = self.get_vimg_code()
-                    result = self.add_sitemap(
-                        domain, need_add_sitemap_urls, verify_code)
+                    result = self.add_sitemap(domain, need_add_sitemap_urls, verify_code)
                     status = result['status']
                     info = result['info']
                 if info != '验证码有误~' and status != 0:
-                    print(domain, info)
+                    print(f"[{index+1}/{count}]",domain, info)
                     if "风险sitemap" in info:
-                        fuck_webs.append(root_domain)
+                        self.fuck_webs.append(root_domain)
                     continue
-                online_sitemap_urls = [i['url']
-                                       for i in self.sitemap_list(domain)]
-            # 最后统一提交蜘蛛sitemap
-            for sitemap_url in online_sitemap_urls:
-                result = self.ping_sitemap(domain, sitemap_url)
-                success_count += 1
+                online_sitemap_urls = [i['url'] for i in self.sitemap_list(domain)]
+            if len(online_sitemap_urls) > 0:
+                # 最后统一提交蜘蛛sitemap
+                for sitemap_url in online_sitemap_urls:
+                    result = self.ping_sitemap(domain, sitemap_url)
+                    success_count += 1
+                # 写入推送日志
+                with open(f'log/{datetime.date.today()}.txt', 'a', encoding='utf-8')as txt_f:
+                    txt_f.write("\n".join(online_sitemap_urls)+"\n")
         print(f'\n本次成功更新sitemap {success_count}条')
+        # 是否删除风险sitemap
+        if int(self.conf['user']['del_domain']):
+            self.del_fuck_webs()
 
-    def bind_site(self):
+    def bind_site_func(self):
         """360站长 绑定网站"""
         webs = self.web_list()
         # 先绑定www主站
@@ -318,13 +361,14 @@ class Bind():
             else:
                 print(f'www.{domain} 未绑定 跳过绑定{domain}的二级域名，请绑定www主域名')
 
+
 def main():
     """主程"""
     b360 = Bind()
-    print('## 开始绑定网站')
-    b360.bind_site()
+    print('\n## 开始绑定网站')
+    b360.bind_site_func()
     print('\n## 开始推送sitemap')
-    b360.update_sitemap()
+    b360.update_sitemap_func()
 
 if __name__ == '__main__':
     main()

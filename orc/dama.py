@@ -46,7 +46,9 @@ def base64_api(img_path, uname='账号', pwd='密码', typeid=2):
     data = {"username": uname, "password": pwd, "typeid": typeid, "image": b64}
     r_data = json.loads(requests.post(
         "http://api.ttshitu.com/predict", json=data, timeout=30).text)
+
     if r_data['success']:
         return r_data["data"]["result"]
     # ！！！！！！！注意：返回 人工不足等 错误情况 请加逻辑处理防止脚本卡死 继续重新 识别
-    return r_data["message"]
+    print("图鉴打码平台",r_data["message"])
+    return "err"

@@ -1,3 +1,4 @@
 http://{域名}/sitemap.xml
-http://{域名}/sitemap.txt
-http://{域名}/seo.xml
+http://{域名}/sitemap1.xml
+http://{域名}/sitemap2.xml
+http://{域名}/sitemap3.xml
