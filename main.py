@@ -1,6 +1,7 @@
 """360自动绑定网站 自动提交sitemap"""
 
 import time
+import os
 from urllib import parse
 from pprint import pprint
 import configparser
@@ -45,6 +46,8 @@ class Bind():
         self.sitemap_urls = self.getlines(self.conf['filePath']['sitemap'])
         self.fuck_webs = []
         self.init_urls()
+        if not os.path.exists('./log'):
+            os.mkdir('./log')
         print(f'本次需要更新的域名：{len(self.urls)}个')
         print(self.urls)
         for i in self.sitemap_urls:
