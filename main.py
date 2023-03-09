@@ -18,7 +18,7 @@ from user import api
 
 class Bind():
     """
-    360自动绑定网站，自动提交sitemap
+    360自动绑定网站 自动提交sitemap
     """
 
     def __init__(self):
@@ -246,7 +246,7 @@ class Bind():
         return result
 
     def del_site(self,domains): 
-        """删除报风险sitemap的网站"""
+        """360站长 删除报风险sitemap的网站"""
         url = 'https://zhanzhang.so.com/?m=Site&a=delete'
         headers = self.headers.copy()
         headers.update({'referer': 'https://zhanzhang.so.com/sitetool/site_manage'})
@@ -257,7 +257,7 @@ class Bind():
         print(f'删除网站{len(domains)}个',result)
 
     def del_fuck_webs(self):
-        """删除风险sitemap"""
+        """360站长 删除风险sitemap"""
         if len(self.fuck_webs) > 0:
             print('\n## 开始删除报风险sitemap的网站')
             webs = self.web_list()
