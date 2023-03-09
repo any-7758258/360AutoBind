@@ -47,6 +47,8 @@ class Bind():
         self.init_urls()
         print(f'本次需要更新的域名：{len(self.urls)}个')
         print(self.urls)
+        for i in self.sitemap_urls:
+            print(i)
 
     def init_urls(self):
         """初始化self.urls"""
