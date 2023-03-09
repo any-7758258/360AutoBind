@@ -1,4 +1,5 @@
 """360自动绑定网站 自动提交sitemap"""
+
 import configparser
 import linecache
 import random
@@ -15,12 +16,11 @@ class Bind():
     360自动绑定网站，自动提交sitemap
     """
     def __init__(self):
-        with open('user/cookie.txt', 'r', encoding='utf-8')as txt_f:
-            self.cookie = txt_f.read().strip()
-        with open('user/urls.txt', 'r', encoding='utf-8')as txt_f:
-            self.urls = list(set(txt_f.read().strip().split('\n')))
         self.conf = configparser.ConfigParser()
-        self.conf.read('user/user.ini')
+        self.conf.read('user/config.ini')
+        with open(self.conf['filePath']['cookie'], 'r', encoding='utf-8')as txt_f:
+            self.cookie = txt_f.read().strip()
+        self.urls = self.getlines(self.conf['filePath']['urls'])
         self.headers = {'accept': 'application/json, text/plain, */*',
                         'accept-encoding': 'gzip, deflate, br',
                         'accept-language': 'zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7',
@@ -36,8 +36,7 @@ class Bind():
                         'sec-fetch-site': 'same-origin',
                         'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
                         ' (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36'}
-
-        self.sitemap_urls = linecache.getlines('user/sitemap.txt')
+        self.sitemap_urls = self.getlines(self.conf['filePath']['sitemap'])
         self.init_urls()
         print(f'本次需要绑定的域名：{len(self.urls)}个')
         print(self.urls)
@@ -46,6 +45,12 @@ class Bind():
         """初始化self.urls"""
         if int(self.conf["user"]["domain_count"]) > 0:
             self.urls = self.auto_create_son_url(self.urls)
+
+    def getlines(self,file_path):
+        """获取文件内数据 去重返回列表"""
+        new_list = [i.strip() for i in linecache.getlines(file_path) if i.strip() != ""]
+        new_list = list(set(new_list))
+        return new_list
 
     def random_str(self, min_count, max_count):
         """随机字符"""
@@ -61,7 +66,7 @@ class Bind():
             root_domains.append(root_domain)
         son_domains = []
         for rdomain in root_domains:
-            for i in range(int(self.conf["user"]["domain_count"])):
+            for _ in range(int(self.conf["user"]["domain_count"])):
                 son_domain = f"{self.random_str(5,8)}.{rdomain}"
                 son_domains.append(son_domain)
         print(f'自动生成二级域名：{len(son_domains)}个')
@@ -313,10 +318,13 @@ class Bind():
             else:
                 print(f'www.{domain} 未绑定 跳过绑定{domain}的二级域名，请绑定www主域名')
 
+def main():
+    """主程"""
+    b360 = Bind()
+    print('## 开始绑定网站')
+    b360.bind_site()
+    print('\n## 开始推送sitemap')
+    b360.update_sitemap()
 
 if __name__ == '__main__':
-    B = Bind()
-    print('##开始绑定网站')
-    B.bind_site()
-    print('\n##开始推送sitemap')
-    B.update_sitemap()
+    main()

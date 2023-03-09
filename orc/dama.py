@@ -36,6 +36,7 @@ from retrying import retry
 # 五、拼图识别
 # 53：拼图识别
 
+
 @retry(stop_max_attempt_number=3)
 def base64_api(img_path, uname='账号', pwd='密码', typeid=2):
     """图鉴打码平台api"""
@@ -49,4 +50,3 @@ def base64_api(img_path, uname='账号', pwd='密码', typeid=2):
         return r_data["data"]["result"]
     # ！！！！！！！注意：返回 人工不足等 错误情况 请加逻辑处理防止脚本卡死 继续重新 识别
     return r_data["message"]
-
