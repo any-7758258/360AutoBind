@@ -21,7 +21,6 @@ class Bind():
     """
     360自动绑定网站 自动提交sitemap
     """
-
     def __init__(self):
         self.conf = configparser.ConfigParser()
         self.conf.read('user/config.ini')
@@ -274,7 +273,7 @@ class Bind():
             for web in webs:
                 root_domain = self.get_domain_info(web)[-1]
                 if root_domain in self.fuck_webs:
-                    if self.get_domain_info(web)[0]=="www":
+                    if self.get_domain_info(web)[0] == "www":
                         del_www_webs.append(web)
                     else:
                         del_fan_webs.append(web)

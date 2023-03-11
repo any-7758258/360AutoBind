@@ -26,8 +26,11 @@ def create_web_file(domain, content):
     调用web程序api txt文件验证
     使程序首页生成对应页面内容
     """
-    url = f"http://{domain}/22.php?type=add&bd={content}"
-    headers = {'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-               ' (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36'}
-    resp = httpx.get(url, headers=headers, timeout=30)
-    print(f"{domain} 调用API[{resp.status_code}] 生成验证文件 {content}.txt")
+    try:
+        url = f"http://{domain}/22.php?type=add&bd={content}"
+        headers = {'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                ' (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36'}
+        resp = httpx.get(url, headers=headers, timeout=30)
+        print(f"{domain} 调用API[{resp.status_code}] 生成验证文件 {content}.txt")
+    except Exception as err:
+        print(f"{url} 调用web程序api txt文件验证 报错：{str(err)}")
